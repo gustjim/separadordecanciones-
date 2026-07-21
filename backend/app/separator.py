@@ -37,15 +37,9 @@ def separate_audio(
 ) -> dict[str, Path]:
     from .spleeter_separator import separate_audio_spleeter
 
-    if mode == SeparationMode.FIVE_STEMS:
-        return separate_audio_spleeter(
-            input_path=input_path,
-            output_dir=output_dir,
-            mode=mode,
-            progress_callback=progress_callback,
-        )
+    demucs_enabled = os.environ.get("DEMUCS_ENABLED", "true").lower() == "true"
 
-    if check_demucs() and check_ffmpeg():
+    if demucs_enabled and check_demucs() and check_ffmpeg():
         try:
             return _separate_demucs(input_path, output_dir, mode, progress_callback)
         except Exception as e:
@@ -53,6 +47,16 @@ def separate_audio(
             if progress_callback:
                 progress_callback(f"Demucs falló ({msg}), usando Spleeter como respaldo...")
             print(f"[WARNING] Demucs failed, falling back to Spleeter: {msg}", flush=True)
+
+    if mode == SeparationMode.FIVE_STEMS:
+        if progress_callback:
+            progress_callback("Usando Spleeter (5 stems: vocals, drums, bass, piano, other)...")
+        return separate_audio_spleeter(
+            input_path=input_path,
+            output_dir=output_dir,
+            mode=mode,
+            progress_callback=progress_callback,
+        )
 
     if mode == SeparationMode.TWO_STEMS:
         if progress_callback:

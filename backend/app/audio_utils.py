@@ -34,15 +34,6 @@ def check_demucs() -> bool:
     for path in [Path("/usr/local/bin/demucs"), Path(sys.prefix) / "bin" / "demucs"]:
         if path.exists():
             return True
-    try:
-        result = subprocess.run(
-            [sys.executable, "-m", "demucs", "--help"],
-            capture_output=True, timeout=15,
-        )
-        if result.returncode == 0:
-            return True
-    except Exception:
-        pass
     return False
 
 
