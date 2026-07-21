@@ -35,9 +35,13 @@ def check_demucs() -> bool:
         if path.exists():
             return True
     try:
-        import demucs  # noqa: F401
-        return True
-    except ImportError:
+        result = subprocess.run(
+            [sys.executable, "-m", "demucs", "--help"],
+            capture_output=True, timeout=15,
+        )
+        if result.returncode == 0:
+            return True
+    except Exception:
         pass
     return False
 

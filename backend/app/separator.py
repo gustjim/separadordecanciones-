@@ -12,18 +12,18 @@ from .models import SeparationMode
 from .audio_utils import check_ffmpeg, check_demucs, convert_wav_to_mp3
 
 
-def _resolve_demucs_cmd() -> str:
+def _resolve_demucs_cmd() -> list[str]:
     path = shutil.which("demucs")
     if path:
-        return path
+        return [path]
     prefix = Path(sys.prefix).resolve()
     candidate = prefix / "bin" / "demucs"
     if candidate.exists():
-        return str(candidate)
+        return [str(candidate)]
     for alt in [Path("/usr/local/bin/demucs"), prefix / "local" / "bin" / "demucs"]:
         if alt.exists():
-            return str(alt)
-    return "demucs"
+            return [str(alt)]
+    return [sys.executable, "-m", "demucs"]
 
 
 def separate_audio(
@@ -52,8 +52,7 @@ def separate_audio(
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    cmd = [
-        _resolve_demucs_cmd(),
+    cmd = _resolve_demucs_cmd() + [
         "-n", settings.DEMUCS_MODEL,
         "-d", settings.DEMUCS_DEVICE,
         "--out", str(output_dir),
