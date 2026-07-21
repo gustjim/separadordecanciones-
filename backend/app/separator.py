@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import os
-import subprocess
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Callable
@@ -10,6 +10,9 @@ from typing import Callable
 from .config import settings
 from .models import SeparationMode
 from .audio_utils import check_ffmpeg, check_demucs, convert_wav_to_mp3
+
+os.environ.setdefault("HF_HOME", "/app/.cache/huggingface")
+os.environ.setdefault("TORCH_HOME", "/app/.cache/torch")
 
 
 def _resolve_demucs_cmd() -> list[str]:
@@ -67,11 +70,16 @@ def separate_audio(
     if progress_callback:
         progress_callback("Iniciando separación con Demucs...")
 
+    env = os.environ.copy()
+    env["HF_HOME"] = "/app/.cache/huggingface"
+    env["TORCH_HOME"] = "/app/.cache/torch"
+
     result = subprocess.run(
         cmd,
         capture_output=True,
         text=True,
         timeout=3600,
+        env=env,
     )
 
     if result.returncode != 0:

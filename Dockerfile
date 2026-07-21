@@ -35,19 +35,14 @@ COPY --from=frontend-build /frontend/dist ./frontend/dist
 RUN python -c "import demucs; print('demucs OK')" && python -c "import spleeter; print('spleeter OK')"
 ENV TORCH_HOME=/app/.cache/torch
 ENV HF_HOME=/app/.cache/huggingface
-RUN mkdir -p /app/.cache/torch/hub/checkpoints /app/.cache/huggingface && \
-    python -c "
-from huggingface_hub import hf_hub_download
-import os, yaml
+RUN mkdir -p /app/.cache/torch/hub/checkpoints /app/.cache/huggingface
+RUN python -c "
+import os
 os.environ['HF_HOME'] = '/app/.cache/huggingface'
-repo_id = 'adefossez/HTDemucs'
-files = hf_hub_download(repo_id, 'htdemucs.yaml')
-with open(files) as f:
-    bag = yaml.safe_load(f)
-for sig in bag['models']:
-    hf_hub_download(repo_id, f'{sig}.safetensors')
-    print(f'Downloaded {sig}.safetensors')
-print('htdemucs model pre-downloaded OK')
+os.environ['TORCH_HOME'] = '/app/.cache/torch'
+from demucs.pretrained import get_model
+model = get_model('htdemucs')
+print('htdemucs model pre-downloaded OK:', model.name)
 " 2>&1
 
 RUN echo '#!/bin/sh\nexec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}' > /app/start.sh && chmod +x /app/start.sh
