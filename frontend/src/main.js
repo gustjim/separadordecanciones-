@@ -91,6 +91,12 @@ async function checkServerHealth() {
       const urlStatus = health.ytdlp_available ? '' : ' (URLs no disponibles - falta yt-dlp)';
       const spleeterStatus = health.spleeter_available ? '' : ' (5 pistas no disponible - falta spleeter)';
       dom.healthText.textContent = `Servidor activo. Python ${health.python_version}. Espacio disponible: ${health.disk_space_mb.toFixed(0)} MB${urlStatus}${spleeterStatus}`;
+      if (health.url_download_enabled === false) {
+        const urlSection = document.querySelector('.url-divider');
+        const urlInputGroup = document.querySelector('.url-input-group');
+        if (urlSection) urlSection.style.display = 'none';
+        if (urlInputGroup) urlInputGroup.style.display = 'none';
+      }
     }
   } catch {
     dom.healthBanner.style.display = 'block';

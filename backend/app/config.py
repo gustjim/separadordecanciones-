@@ -23,8 +23,12 @@ class Settings:
     CLEANUP_MAX_AGE_HOURS: int = 2
     HOST: str = "127.0.0.1"
     PORT: int = 8000
+    URL_DOWNLOAD_ENABLED: bool = True
 
     def __post_init__(self):
+        import os
+        env_val = os.environ.get("URL_DOWNLOAD_ENABLED", "true").lower()
+        self.URL_DOWNLOAD_ENABLED = env_val in ("true", "1", "yes")
         if self.UPLOAD_DIR is None:
             self.UPLOAD_DIR = self.BASE_DIR / "temp_uploads"
         if self.JOBS_DIR is None:

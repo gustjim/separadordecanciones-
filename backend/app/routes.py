@@ -47,6 +47,7 @@ def health_check():
         ffmpeg_available=check_ffmpeg(),
         demucs_available=check_demucs(),
         spleeter_available=check_spleeter(),
+        url_download_enabled=settings.URL_DOWNLOAD_ENABLED,
         python_version=f"{os.sys.version_info.major}.{os.sys.version_info.minor}.{os.sys.version_info.micro}",
         disk_space_mb=round(disk_usage, 1),
         ytdlp_available=check_ytdlp(),
@@ -127,6 +128,12 @@ async def create_job_from_url(
     mode: str = Form("dos_pistas"),
     output_format: str = Form("wav"),
 ):
+    if not settings.URL_DOWNLOAD_ENABLED:
+        raise HTTPException(
+            status_code=403,
+            detail="La descarga desde URLs no está habilitada en este servidor.",
+        )
+
     if not validate_media_url(url):
         raise HTTPException(
             status_code=400,

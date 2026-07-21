@@ -56,6 +56,7 @@ class HealthResponse(BaseModel):
     ffmpeg_available: bool
     demucs_available: bool
     spleeter_available: bool = False
+    url_download_enabled: bool = True
     python_version: str
     disk_space_mb: float = 0.0
     ytdlp_available: bool = False
