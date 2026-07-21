@@ -13,7 +13,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir --no-deps spleeter==2.1.0 librosa>=0.10.0
 COPY backend/ ./
 COPY --from=frontend-build /frontend/dist ./frontend/dist
 
