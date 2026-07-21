@@ -3,7 +3,6 @@ uvicorn[standard]==0.34.2
 python-multipart==0.0.20
 pydantic==2.11.3
 yt-dlp>=2024.1.0
-demucs>=4.1.0
 tensorflow>=2.16.0
 soundfile>=0.14.0
 norbert>=0.2.1

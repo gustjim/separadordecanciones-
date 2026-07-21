@@ -22,7 +22,6 @@ ENV PATH="$DENO_INSTALL/bin:$PATH"
 WORKDIR /app
 
 RUN pip install --no-cache-dir "numpy<2"
-RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir "numpy<2"
