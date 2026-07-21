@@ -62,6 +62,12 @@ def separate_audio(
         "--filename", "{stem}.{ext}",
     ]
 
+    local_model_dir = Path("/app/models/htdemucs")
+    if not local_model_dir.exists():
+        local_model_dir = Path(__file__).resolve().parent.parent.parent / "models" / "htdemucs"
+    if local_model_dir.exists() and (local_model_dir / "htdemucs.yaml").exists():
+        cmd.extend(["--repo", str(local_model_dir.parent)])
+
     if mode == SeparationMode.TWO_STEMS:
         cmd.extend(["--two-stems", "vocals"])
 
