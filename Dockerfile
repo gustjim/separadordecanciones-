@@ -18,5 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt && \
 COPY backend/ ./
 COPY --from=frontend-build /frontend/dist ./frontend/dist
 
+RUN echo '#!/bin/sh\nexec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}' > /app/start.sh && chmod +x /app/start.sh
+
 EXPOSE 8000
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+CMD ["/bin/sh", "/app/start.sh"]
