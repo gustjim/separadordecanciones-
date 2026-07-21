@@ -35,8 +35,9 @@ def separate_audio(
     mode: SeparationMode,
     progress_callback: Callable[[str], None] | None = None,
 ) -> dict[str, Path]:
+    from .spleeter_separator import separate_audio_spleeter
+
     if mode == SeparationMode.FIVE_STEMS:
-        from .spleeter_separator import separate_audio_spleeter
         return separate_audio_spleeter(
             input_path=input_path,
             output_dir=output_dir,
@@ -44,15 +45,34 @@ def separate_audio(
             progress_callback=progress_callback,
         )
 
-    if not check_demucs():
-        raise RuntimeError(
-            "Demucs no está instalado. Instale Demucs con: pip install demucs"
-        )
-    if not check_ffmpeg():
-        raise RuntimeError(
-            "FFmpeg no está instalado. Instale FFmpeg con: brew install ffmpeg"
-        )
+    if check_demucs() and check_ffmpeg():
+        try:
+            return _separate_demucs(input_path, output_dir, mode, progress_callback)
+        except Exception as e:
+            msg = str(e)
+            if progress_callback:
+                progress_callback(f"Demucs falló ({msg}), usando Spleeter como respaldo...")
+            print(f"[WARNING] Demucs failed, falling back to Spleeter: {msg}", flush=True)
 
+    if mode == SeparationMode.TWO_STEMS:
+        if progress_callback:
+            progress_callback("Usando Spleeter (2 stems: vocals + accompaniment)...")
+        return separate_audio_spleeter(input_path, output_dir, mode, progress_callback)
+
+    if mode == SeparationMode.FOUR_STEMS:
+        if progress_callback:
+            progress_callback("Usando Spleeter (4 stems: vocals, drums, bass, other)...")
+        return separate_audio_spleeter(input_path, output_dir, mode, progress_callback)
+
+    raise RuntimeError("No hay motor de separación disponible. Instale Demucs o Spleeter.")
+
+
+def _separate_demucs(
+    input_path: Path,
+    output_dir: Path,
+    mode: SeparationMode,
+    progress_callback: Callable[[str], None] | None = None,
+) -> dict[str, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     cmd = _resolve_demucs_cmd() + [
@@ -96,11 +116,8 @@ def separate_audio(
         progress_callback("Separación completada, buscando archivos de resultado...")
 
     stem_files = {}
-    track_name = input_path.stem
-
     possible_stems_4 = ["vocals", "drums", "bass", "other"]
     possible_stems_2 = ["vocals", "no_vocals"]
-
     possible_stems = possible_stems_2 if mode == SeparationMode.TWO_STEMS else possible_stems_4
 
     for stem in possible_stems:
@@ -116,8 +133,7 @@ def separate_audio(
         all_wavs = list(output_dir.rglob("*.wav"))
         if all_wavs:
             for wav in all_wavs:
-                stem_name = wav.stem
-                stem_files[stem_name] = wav
+                stem_files[wav.stem] = wav
 
     return stem_files
 
