@@ -34,9 +34,12 @@ class TestCheckDemucs:
 
     def test_returns_false_when_not_installed(self):
         import tempfile
+        mock_result = MagicMock()
+        mock_result.returncode = 1
         with tempfile.TemporaryDirectory() as tmpdir, \
              patch("app.audio_utils.shutil.which", return_value=None), \
-             patch("app.audio_utils.sys.prefix", tmpdir):
+             patch("app.audio_utils.sys.prefix", tmpdir), \
+             patch("app.audio_utils.subprocess.run", return_value=mock_result):
             assert check_demucs() is False
 
 
