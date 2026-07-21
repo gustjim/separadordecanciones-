@@ -17,6 +17,10 @@ FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import os
+    demucs_enabled = os.environ.get("DEMUCS_ENABLED", "false").lower() == "true"
+    print(f"[STARTUP] DEMUCS_ENABLED={demucs_enabled}", flush=True)
+    print(f"[STARTUP] DEMUCS_ENABLED raw={os.environ.get('DEMUCS_ENABLED', '<NOT SET>')}", flush=True)
     settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     settings.JOBS_DIR.mkdir(parents=True, exist_ok=True)
     start_cleanup_service()
