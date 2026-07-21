@@ -15,12 +15,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+RUN pip install --no-cache-dir "numpy<2"
 RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir --no-deps spleeter==2.1.0 "librosa>=0.10.0"
-RUN pip install --no-cache-dir demucs
+RUN pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir "numpy<2"
+RUN pip install --no-cache-dir --no-deps spleeter==2.1.0 "librosa>=0.10.0" && pip install --no-cache-dir "numpy<2"
+RUN pip install --no-cache-dir demucs && pip install --no-cache-dir "numpy<2"
 
 COPY backend/ ./
 COPY --from=frontend-build /frontend/dist ./frontend/dist
