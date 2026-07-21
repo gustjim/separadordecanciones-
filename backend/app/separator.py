@@ -37,7 +37,7 @@ def separate_audio(
 ) -> dict[str, Path]:
     from .spleeter_separator import separate_audio_spleeter
 
-    demucs_enabled = os.environ.get("DEMUCS_ENABLED", "true").lower() == "true"
+    demucs_enabled = os.environ.get("DEMUCS_ENABLED", "false").lower() == "true"
 
     if demucs_enabled and check_demucs() and check_ffmpeg():
         try:
