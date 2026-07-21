@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Separador Musical</title>
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+  <div class="app-container">
+    <header class="app-header">
+      <h1>Separador Musical</h1>
+      <p class="subtitle">Separa la voz y los instrumentos de cualquier canción usando inteligencia artificial</p>
+    </header>
+
+    <section id="health-banner" class="health-banner" style="display:none;">
+      <span id="health-text"></span>
+    </section>
+
+    <main>
+      <section id="upload-section" class="card upload-section">
+        <div id="drop-zone" class="drop-zone">
+          <div class="drop-zone-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <p>Arrastra un archivo de audio aqui</p>
+          <p class="drop-zone-sub">o haz clic para seleccionar</p>
+          <input type="file" id="file-input" accept=".mp3,.wav,.flac,.m4a,.aac,.ogg" hidden />
+        </div>
+
+        <div style="display:flex;align-items:center;gap:1rem;margin:1.25rem 0;color:#6b6f82;font-size:0.85rem;">
+          <div style="flex:1;height:1px;background:#2a2e40;"></div>
+          <span>o pega un enlace de YouTube / SoundCloud</span>
+          <div style="flex:1;height:1px;background:#2a2e40;"></div>
+        </div>
+
+        <div style="display:flex;gap:0.75rem;align-items:stretch;">
+          <div style="flex:1;display:flex;align-items:center;gap:0.5rem;background:#1a1d27;border:1px solid #2a2e40;border-radius:8px;padding:0 0.75rem;min-height:48px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#6b6f82;flex-shrink:0;">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+            <input type="url" id="url-input" placeholder="https://www.youtube.com/watch?v=..." style="flex:1;background:none;border:none;color:#e8eaf0;font-size:0.95rem;padding:0.75rem 0;outline:none;width:100%;" />
+          </div>
+          <button id="url-submit-btn" style="display:flex;align-items:center;gap:0.5rem;padding:0.8rem 1.5rem;background:#6366f1;color:white;border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            Descargar y separar
+          </button>
+        </div>
+        <p id="url-error" style="color:#ef4444;font-size:0.85rem;margin-top:0.5rem;display:none;"></p>
+      </section>
+
+      <section id="file-info" class="card file-info" style="display:none;">
+        <div class="file-info-header">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18V5l12-2v13"/>
+            <circle cx="6" cy="18" r="3"/>
+            <circle cx="18" cy="16" r="3"/>
+          </svg>
+          <div>
+            <h3 id="file-name"></h3>
+            <p id="file-details"></p>
+          </div>
+          <button id="remove-file" class="btn-icon" title="Eliminar archivo" aria-label="Eliminar archivo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <audio id="original-player" controls class="full-player"></audio>
+      </section>
+
+      <section id="options-section" class="card options-section" style="display:none;">
+        <div class="options-grid">
+          <div class="option-group">
+            <label for="mode-select">Modo de separación</label>
+            <select id="mode-select">
+              <option value="dos_pistas">Voz e instrumental (2 pistas)</option>
+              <option value="cuatro_pistas">Cuatro pistas (voz, batería, bajo, otros)</option>
+              <option value="cinco_pistas">Cinco pistas - Spleeter (voz, batería, bajo, piano, otros)</option>
+            </select>
+          </div>
+          <div class="option-group">
+            <label for="format-select">Formato de salida</label>
+            <select id="format-select">
+              <option value="wav">WAV (sin pérdida)</option>
+              <option value="mp3">MP3 (compressión)</option>
+            </select>
+          </div>
+        </div>
+        <button id="separate-btn" class="btn-primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          Separar canción
+        </button>
+      </section>
+
+      <section id="progress-section" class="card progress-section" style="display:none;">
+        <div class="progress-header">
+          <div class="spinner"></div>
+          <h3>Procesando...</h3>
+        </div>
+        <p id="progress-message" class="progress-message"></p>
+        <div id="progress-steps" class="progress-steps"></div>
+      </section>
+
+      <section id="error-section" class="card error-section" style="display:none;">
+        <div class="error-header">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          <h3>Error</h3>
+        </div>
+        <p id="error-message"></p>
+        <button id="retry-btn" class="btn-secondary">Intentar de nuevo</button>
+      </section>
+
+      <section id="results-section" class="card results-section" style="display:none;">
+        <div class="results-header">
+          <h2>Pistas separadas</h2>
+          <div class="results-actions">
+            <button id="download-all-btn" class="btn-secondary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Descargar todo (ZIP)
+            </button>
+          </div>
+        </div>
+
+        <div id="mixer-controls" class="mixer-controls" style="display:none;">
+          <h3>Mezclador</h3>
+          <div class="mixer-buttons">
+            <button id="mixer-play-all" class="btn-icon" title="Reproducir todo">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+            </button>
+            <button id="mixer-pause-all" class="btn-icon" title="Pausar todo" style="display:none;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="6" y="4" width="4" height="16"/>
+                <rect x="14" y="4" width="4" height="16"/>
+              </svg>
+            </button>
+            <button id="mixer-stop-all" class="btn-icon" title="Detener todo">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="6" y="6" width="12" height="12"/>
+              </svg>
+            </button>
+            <div class="mixer-progress-container">
+              <span id="mixer-time">0:00</span>
+              <div id="mixer-progress-bar" class="progress-bar-mixer">
+                <div id="mixer-progress-fill" class="progress-fill"></div>
+              </div>
+              <span id="mixer-duration">0:00</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="tracks-container" class="tracks-container"></div>
+
+        <button id="new-song-btn" class="btn-secondary new-song-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Procesar otra canción
+        </button>
+      </section>
+
+      <footer class="app-footer">
+        <p>Solo procesa archivos de audio propios o para los que tengas autorización. No se descargan contenidos de plataformas externas.</p>
+        <p>Motor de separación: Demucs HTDemucs por Meta AI Research</p>
+      </footer>
+    </main>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
