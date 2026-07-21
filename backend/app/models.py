@@ -57,6 +57,8 @@ class HealthResponse(BaseModel):
     demucs_available: bool
     spleeter_available: bool = False
     url_download_enabled: bool = True
+    youtube_enabled: bool = True
+    soundcloud_enabled: bool = True
     python_version: str
     disk_space_mb: float = 0.0
     ytdlp_available: bool = False

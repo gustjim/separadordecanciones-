@@ -48,6 +48,8 @@ def health_check():
         demucs_available=check_demucs(),
         spleeter_available=check_spleeter(),
         url_download_enabled=settings.URL_DOWNLOAD_ENABLED,
+        youtube_enabled=settings.YOUTUBE_ENABLED,
+        soundcloud_enabled=settings.SOUNDCLOUD_ENABLED,
         python_version=f"{os.sys.version_info.major}.{os.sys.version_info.minor}.{os.sys.version_info.micro}",
         disk_space_mb=round(disk_usage, 1),
         ytdlp_available=check_ytdlp(),

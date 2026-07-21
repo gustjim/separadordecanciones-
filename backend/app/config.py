@@ -24,11 +24,17 @@ class Settings:
     HOST: str = "127.0.0.1"
     PORT: int = 8000
     URL_DOWNLOAD_ENABLED: bool = True
+    YOUTUBE_ENABLED: bool = True
+    SOUNDCLOUD_ENABLED: bool = True
 
     def __post_init__(self):
         import os
         env_val = os.environ.get("URL_DOWNLOAD_ENABLED", "true").lower()
         self.URL_DOWNLOAD_ENABLED = env_val in ("true", "1", "yes")
+        yt_val = os.environ.get("YOUTUBE_ENABLED", "true").lower()
+        self.YOUTUBE_ENABLED = yt_val in ("true", "1", "yes")
+        sc_val = os.environ.get("SOUNDCLOUD_ENABLED", "true").lower()
+        self.SOUNDCLOUD_ENABLED = sc_val in ("true", "1", "yes")
         if self.UPLOAD_DIR is None:
             self.UPLOAD_DIR = self.BASE_DIR / "temp_uploads"
         if self.JOBS_DIR is None:

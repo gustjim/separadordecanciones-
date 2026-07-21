@@ -96,6 +96,18 @@ async function checkServerHealth() {
         const urlInputGroup = document.querySelector('.url-input-group');
         if (urlSection) urlSection.style.display = 'none';
         if (urlInputGroup) urlInputGroup.style.display = 'none';
+      } else {
+        const platforms = [];
+        if (health.youtube_enabled) platforms.push('YouTube');
+        if (health.soundcloud_enabled) platforms.push('SoundCloud');
+        const dividerText = document.getElementById('url-divider-text');
+        if (dividerText && platforms.length > 0) {
+          dividerText.textContent = `o pega un enlace de ${platforms.join(' / ')}`;
+        } else if (dividerText) {
+          dividerText.parentElement.style.display = 'none';
+          const urlGroup = document.getElementById('url-input-group');
+          if (urlGroup) urlGroup.style.display = 'none';
+        }
       }
     }
   } catch {

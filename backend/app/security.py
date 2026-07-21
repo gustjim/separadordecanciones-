@@ -16,6 +16,9 @@ ALLOWED_URL_DOMAINS = {
     "soundcloud.com", "www.soundcloud.com",
 }
 
+YOUTUBE_DOMAINS = {"youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be", "music.youtube.com"}
+SOUNDCLOUD_DOMAINS = {"soundcloud.com", "www.soundcloud.com"}
+
 
 def sanitize_filename(name: str) -> str:
     clean = UNSAFE_FILENAME_CHARS.sub("_", name)
@@ -79,6 +82,12 @@ def validate_media_url(url: str) -> bool:
         if parsed.scheme not in ("http", "https"):
             return False
         hostname = (parsed.hostname or "").lower()
-        return hostname in ALLOWED_URL_DOMAINS
+        if hostname not in ALLOWED_URL_DOMAINS:
+            return False
+        if hostname in YOUTUBE_DOMAINS and not settings.YOUTUBE_ENABLED:
+            return False
+        if hostname in SOUNDCLOUD_DOMAINS and not settings.SOUNDCLOUD_ENABLED:
+            return False
+        return True
     except (ValueError, TypeError):
         return False
