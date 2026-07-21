@@ -31,6 +31,14 @@ def check_demucs() -> bool:
     venv_bin = _venv_bin_dir()
     if venv_bin and (venv_bin / "demucs").exists():
         return True
+    for path in [Path("/usr/local/bin/demucs"), Path(sys.prefix) / "bin" / "demucs"]:
+        if path.exists():
+            return True
+    try:
+        import demucs  # noqa: F401
+        return True
+    except ImportError:
+        pass
     return False
 
 

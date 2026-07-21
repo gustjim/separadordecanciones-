@@ -20,6 +20,9 @@ def _resolve_demucs_cmd() -> str:
     candidate = prefix / "bin" / "demucs"
     if candidate.exists():
         return str(candidate)
+    for alt in [Path("/usr/local/bin/demucs"), prefix / "local" / "bin" / "demucs"]:
+        if alt.exists():
+            return str(alt)
     return "demucs"
 
 
