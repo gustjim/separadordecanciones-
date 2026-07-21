@@ -15,13 +15,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir --no-deps spleeter==2.1.0 "librosa>=0.10.0"
-RUN pip install --no-cache-dir demucs && python -c "import demucs; print('demucs OK')"
+RUN pip install --no-cache-dir demucs
 
 COPY backend/ ./
 COPY --from=frontend-build /frontend/dist ./frontend/dist
+
+RUN python -c "import demucs; print('demucs OK')" && python -c "import spleeter; print('spleeter OK')"
 
 RUN echo '#!/bin/sh\nexec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}' > /app/start.sh && chmod +x /app/start.sh
 
