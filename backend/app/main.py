@@ -12,7 +12,7 @@ from .routes import router
 from .cleanup import start_cleanup_service, stop_cleanup_service
 
 
-FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend" / "dist"
 
 
 @asynccontextmanager
