@@ -27,6 +27,7 @@ COPY backend/ ./
 COPY --from=frontend-build /frontend/dist ./frontend/dist
 
 RUN python -c "import demucs; print('demucs OK')" && python -c "import spleeter; print('spleeter OK')"
+RUN python -c "from demucs.pretrained import get_model; m = get_model('htdemucs'); print('model OK')"
 
 RUN echo '#!/bin/sh\nexec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}' > /app/start.sh && chmod +x /app/start.sh
 
