@@ -6,16 +6,20 @@ COPY frontend/ ./
 RUN npm run build
 
 FROM python:3.11-slim
+
+ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     pkg-config \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir --no-deps spleeter==2.1.0 librosa>=0.10.0 && \
-    pip install --no-cache-dir demucs
+RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --no-deps spleeter==2.1.0 "librosa>=0.10.0"
+RUN pip install --no-cache-dir demucs && python -c "import demucs; print('demucs OK')"
+
 COPY backend/ ./
 COPY --from=frontend-build /frontend/dist ./frontend/dist
 
