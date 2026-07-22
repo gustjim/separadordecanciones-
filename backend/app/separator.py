@@ -45,30 +45,14 @@ def separate_audio(
         except Exception as e:
             msg = str(e)
             if progress_callback:
-                progress_callback(f"Demucs falló ({msg}), usando Spleeter como respaldo...")
-            print(f"[WARNING] Demucs failed, falling back to Spleeter: {msg}", flush=True)
+                progress_callback(f"Demucs falló ({msg}), usando separador como respaldo...")
+            print(f"[WARNING] Demucs failed, falling back: {msg}", flush=True)
 
-    if mode == SeparationMode.FIVE_STEMS:
-        if progress_callback:
-            progress_callback("Usando Spleeter (5 stems: vocals, drums, bass, piano, other)...")
-        return separate_audio_spleeter(
-            input_path=input_path,
-            output_dir=output_dir,
-            mode=mode,
-            progress_callback=progress_callback,
-        )
+    if progress_callback:
+        stems = {SeparationMode.FIVE_STEMS: "5 pistas", SeparationMode.FOUR_STEMS: "4 pistas", SeparationMode.TWO_STEMS: "2 pistas (vocal + instrumentos)"}
+        progress_callback(f"Usando audio-separator ({stems.get(mode, '2 pistas')})...")
 
-    if mode == SeparationMode.TWO_STEMS:
-        if progress_callback:
-            progress_callback("Usando Spleeter (2 stems: vocals + accompaniment)...")
-        return separate_audio_spleeter(input_path, output_dir, mode, progress_callback)
-
-    if mode == SeparationMode.FOUR_STEMS:
-        if progress_callback:
-            progress_callback("Usando Spleeter (4 stems: vocals, drums, bass, other)...")
-        return separate_audio_spleeter(input_path, output_dir, mode, progress_callback)
-
-    raise RuntimeError("No hay motor de separación disponible. Instale Demucs o Spleeter.")
+    return separate_audio_spleeter(input_path, output_dir, mode, progress_callback)
 
 
 def _separate_demucs(

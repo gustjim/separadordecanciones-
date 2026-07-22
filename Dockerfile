@@ -13,22 +13,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config \
     curl \
     unzip \
-    && curl -fsSL https://deno.land/install.sh | sh \
     && rm -rf /var/lib/apt/lists/*
-
-ENV DENO_INSTALL="/root/.deno"
-ENV PATH="$DENO_INSTALL/bin:$PATH"
-ENV DEMUCS_ENABLED="false"
 
 WORKDIR /app
 
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir --no-deps spleeter==2.1.0 && pip install --no-cache-dir "numpy<2"
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ ./
 COPY --from=frontend-build /frontend/dist ./frontend/dist
 
-RUN python -c "from spleeter.separator import Separator; s = Separator('spleeter:2stems'); print('spleeter OK')"
+RUN python -c "from audio_separator.separator import Separator; print('audio-separator OK')"
 
 RUN echo '#!/bin/sh\nexec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}' > /app/start.sh && chmod +x /app/start.sh
 

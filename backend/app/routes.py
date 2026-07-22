@@ -200,7 +200,7 @@ def _process_url_job(job_id: str, url: str):
             f"{audio_info['sample_rate']}Hz, {audio_info['channels']} canales"
         )
 
-        engine = "Spleeter" if job.mode == SeparationMode.FIVE_STEMS else "Demucs"
+        engine = "Audio Separator"
         update_job_status(job_id, JobStatus.SEPARATING, f"Separando pistas con {engine}...")
 
         raw_output_dir = job.job_dir / "raw"
@@ -279,7 +279,7 @@ def _process_job(job_id: str):
             f"{audio_info['sample_rate']}Hz, {audio_info['channels']} canales"
         )
 
-        engine = "Spleeter" if job.mode == SeparationMode.FIVE_STEMS else "Demucs"
+        engine = "Audio Separator"
         update_job_status(job_id, JobStatus.SEPARATING, f"Separando pistas con {engine} (esto puede tardar varios minutos)...")
 
         raw_output_dir = job.job_dir / "raw"
