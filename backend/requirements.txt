@@ -26,3 +26,4 @@ decorator>=4.0.10
 threadpoolctl>=2.0.0
 lazy_loader>=0.1
 msgpack
+ffmpeg-python>=0.2.0
