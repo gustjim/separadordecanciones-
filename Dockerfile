@@ -15,11 +15,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 ENV DEMUCS_ENABLED="false"
+ENV USE_TORCH=0
+ENV OMP_NUM_THREADS=1
 
 WORKDIR /app
 
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r requirements.txt
 
 RUN mkdir -p /app/models && \
     curl -fSL -o /app/models/UVR_MDXNET_KARA.onnx \
