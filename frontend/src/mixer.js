@@ -1,6 +1,7 @@
 export class Mixer {
-  constructor(playerManager) {
+  constructor(playerManager, jobId) {
     this.playerManager = playerManager;
+    this.jobId = jobId;
     this.isPlaying = false;
     this.isPaused = false;
     this.tracks = [];
@@ -18,13 +19,30 @@ export class Mixer {
     this.playAllBtn.addEventListener('click', () => this.playAll());
     this.pauseAllBtn.addEventListener('click', () => this.pauseAll());
     this.stopAllBtn.addEventListener('click', () => this.stopAll());
-    this.progressBar.addEventListener('mousedown', (e) => this.startDrag(e));
-    this.progressBar.addEventListener('click', (e) => this.seekTo(e));
-    document.addEventListener('mousemove', (e) => this.onDrag(e));
-    document.addEventListener('mouseup', () => this.endDrag());
-    this.progressBar.addEventListener('touchstart', (e) => this.startDrag(e.touches[0]), { passive: false });
-    document.addEventListener('touchmove', (e) => { if (this.isDragging) { e.preventDefault(); this.onDrag(e.touches[0]); } }, { passive: false });
-    document.addEventListener('touchend', () => this.endDrag());
+
+    this.progressBar.addEventListener('click', (e) => this.seekFromEvent(e));
+    this.progressBar.addEventListener('mousedown', (e) => {
+      this.isDragging = true;
+      this.seekFromEvent(e);
+      e.preventDefault();
+    });
+    document.addEventListener('mousemove', (e) => {
+      if (!this.isDragging) return;
+      this.seekFromEvent(e);
+    });
+    document.addEventListener('mouseup', () => { this.isDragging = false; });
+
+    this.progressBar.addEventListener('touchstart', (e) => {
+      this.isDragging = true;
+      this.seekFromEvent(e.touches[0]);
+      e.preventDefault();
+    }, { passive: false });
+    document.addEventListener('touchmove', (e) => {
+      if (!this.isDragging) return;
+      e.preventDefault();
+      this.seekFromEvent(e.touches[0]);
+    }, { passive: false });
+    document.addEventListener('touchend', () => { this.isDragging = false; });
   }
 
   setTracks(audioElements) {
@@ -82,22 +100,7 @@ export class Mixer {
     this.stopProgressUpdate();
   }
 
-  startDrag(event) {
-    event.preventDefault();
-    this.isDragging = true;
-    this.seekTo(event);
-  }
-
-  onDrag(event) {
-    if (!this.isDragging) return;
-    this.seekTo(event);
-  }
-
-  endDrag() {
-    this.isDragging = false;
-  }
-
-  seekTo(event) {
+  seekFromEvent(event) {
     if (this.tracks.length === 0) return;
     const rect = this.progressBar.getBoundingClientRect();
     const clientX = event.clientX || 0;

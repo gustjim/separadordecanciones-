@@ -154,6 +154,7 @@ function resetUI() {
   if (stopPolling) stopPolling();
   stopPolling = null;
   if (currentObjectURL) { URL.revokeObjectURL(currentObjectURL); currentObjectURL = null; }
+  if (mixer) { mixer.stopAll(); mixer = null; }
   dom.originalPlayer.src = '';
   dom.tracksContainer.innerHTML = '';
   dom.progressSteps.innerHTML = '';
@@ -244,7 +245,7 @@ function renderResults(jobData) {
 
   if (audioElements.length > 1) {
     dom.mixerControls.style.display = 'block';
-    if (!mixer) mixer = new Mixer(playerManager);
+    if (!mixer) mixer = new Mixer(playerManager, currentJobId);
     mixer.setTracks(audioElements);
   }
 }
