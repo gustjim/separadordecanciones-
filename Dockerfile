@@ -22,23 +22,13 @@ ENV DEMUCS_ENABLED="false"
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir "numpy<2"
-
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir "numpy<2"
-RUN pip install --no-cache-dir --no-deps spleeter==2.1.0 && \
-    pip install --no-cache-dir \
-    "librosa>=0.10.0" norbert soundfile httpx \
-    audioread soxr numba llvmlite \
-    pandas \
-    pooch resampy joblib decorator threadpoolctl lazy_loader \
-    msgpack && \
-    pip install --no-cache-dir "numpy<2"
+RUN pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir --no-deps spleeter==2.1.0 && pip install --no-cache-dir "numpy<2"
 
 COPY backend/ ./
 COPY --from=frontend-build /frontend/dist ./frontend/dist
 
-RUN python -c "import spleeter; print('spleeter OK')"
+RUN python -c "from spleeter.separator import Separator; s = Separator('spleeter:2stems'); print('spleeter OK')"
 
 RUN echo '#!/bin/sh\nexec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}' > /app/start.sh && chmod +x /app/start.sh
 
