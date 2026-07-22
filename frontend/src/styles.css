@@ -656,6 +656,21 @@ body {
   margin-bottom: 0.3rem;
 }
 
+.creator-credit {
+  margin-top: 0.5rem;
+}
+
+.creator-credit a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.creator-credit a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
 .track-label-vocals .track-name { color: #818cf8; }
 .track-label-drums .track-name { color: #f97316; }
 .track-label-bass .track-name { color: #22c55e; }
