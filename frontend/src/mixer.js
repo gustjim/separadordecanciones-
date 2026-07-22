@@ -5,6 +5,7 @@ export class Mixer {
     this.isPaused = false;
     this.tracks = [];
     this.rafId = null;
+    this.isDragging = false;
 
     this.playAllBtn = document.getElementById('mixer-play-all');
     this.pauseAllBtn = document.getElementById('mixer-pause-all');
@@ -17,7 +18,13 @@ export class Mixer {
     this.playAllBtn.addEventListener('click', () => this.playAll());
     this.pauseAllBtn.addEventListener('click', () => this.pauseAll());
     this.stopAllBtn.addEventListener('click', () => this.stopAll());
+    this.progressBar.addEventListener('mousedown', (e) => this.startDrag(e));
     this.progressBar.addEventListener('click', (e) => this.seekTo(e));
+    document.addEventListener('mousemove', (e) => this.onDrag(e));
+    document.addEventListener('mouseup', () => this.endDrag());
+    this.progressBar.addEventListener('touchstart', (e) => this.startDrag(e.touches[0]), { passive: false });
+    document.addEventListener('touchmove', (e) => { if (this.isDragging) { e.preventDefault(); this.onDrag(e.touches[0]); } }, { passive: false });
+    document.addEventListener('touchend', () => this.endDrag());
   }
 
   setTracks(audioElements) {
@@ -75,16 +82,36 @@ export class Mixer {
     this.stopProgressUpdate();
   }
 
+  startDrag(event) {
+    event.preventDefault();
+    this.isDragging = true;
+    this.seekTo(event);
+  }
+
+  onDrag(event) {
+    if (!this.isDragging) return;
+    this.seekTo(event);
+  }
+
+  endDrag() {
+    this.isDragging = false;
+  }
+
   seekTo(event) {
     if (this.tracks.length === 0) return;
     const rect = this.progressBar.getBoundingClientRect();
-    const ratio = (event.clientX - rect.left) / rect.width;
+    const clientX = event.clientX || 0;
+    let ratio = (clientX - rect.left) / rect.width;
+    ratio = Math.max(0, Math.min(1, ratio));
     const duration = this.tracks[0].duration || 0;
     const seekTime = ratio * duration;
 
     for (const audio of this.tracks) {
       audio.currentTime = Math.min(seekTime, audio.duration || 0);
     }
+
+    this.progressFill.style.width = `${ratio * 100}%`;
+    this.timeDisplay.textContent = this.formatTime(seekTime);
   }
 
   startProgressUpdate() {

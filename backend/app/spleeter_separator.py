@@ -29,7 +29,7 @@ def separate_audio_spleeter(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if progress_callback:
-        progress_callback("Iniciando separacion con Spleeter...")
+        progress_callback(f"Iniciando separacion con Spleeter ({preset})...")
 
     separator = Separator(preset)
     separator.separate_to_file(str(input_path), str(output_dir))

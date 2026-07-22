@@ -84,7 +84,12 @@ _active_jobs_lock = threading.Lock()
 
 
 def create_job(job_id: str, filename: str, mode: str, output_format: str) -> Job:
-    sep_mode = SeparationMode.TWO_STEMS if mode == "dos_pistas" else SeparationMode.FOUR_STEMS
+    if mode == "cinco_pistas":
+        sep_mode = SeparationMode.FIVE_STEMS
+    elif mode == "cuatro_pistas":
+        sep_mode = SeparationMode.FOUR_STEMS
+    else:
+        sep_mode = SeparationMode.TWO_STEMS
     out_fmt = OutputFormat.MP3 if output_format == "mp3" else OutputFormat.WAV
 
     job = Job(job_id=job_id, filename=filename, mode=sep_mode, output_format=out_fmt)
