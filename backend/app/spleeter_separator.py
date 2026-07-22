@@ -6,71 +6,57 @@ from typing import Callable
 from .models import SeparationMode
 
 
+SPLATTER_STEMS_5 = ["vocals", "drums", "bass", "piano", "other"]
+SPLATTER_STEMS_4 = ["vocals", "drums", "bass", "other"]
+SPLATTER_STEMS_2 = ["vocals", "accompaniment"]
+
+PRESET_MAP = {
+    SeparationMode.FIVE_STEMS: ("spleeter:5stems", SPLATTER_STEMS_5),
+    SeparationMode.FOUR_STEMS: ("spleeter:4stems", SPLATTER_STEMS_4),
+    SeparationMode.TWO_STEMS: ("spleeter:2stems", SPLATTER_STEMS_2),
+}
+
+
 def separate_audio_spleeter(
     input_path: Path,
     output_dir: Path,
     mode: SeparationMode,
     progress_callback: Callable[[str], None] | None = None,
 ) -> dict[str, Path]:
-    from audio_separator.separator import Separator
+    from spleeter.separator import Separator
 
+    preset, expected_stems = PRESET_MAP[mode]
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    if mode == SeparationMode.FIVE_STEMS:
-        model_name = "model_bs_roformer_ep_317_sdr_12.9755.ckpt"
-        stems_map = {
-            "vocals": "Vocals",
-            "drums": "Drums",
-            "bass": "Bass",
-            "piano": "Piano",
-            "other": "Other",
-        }
-    elif mode == SeparationMode.FOUR_STEMS:
-        model_name = "model_bs_roformer_ep_317_sdr_12.9755.ckpt"
-        stems_map = {
-            "vocals": "Vocals",
-            "drums": "Drums",
-            "bass": "Bass",
-            "other": "Other",
-        }
-    else:
-        model_name = "model_mel_band_roformer_ep_3005_sdr_11.4360.ckpt"
-        stems_map = {
-            "vocals": "Vocals",
-            "accompaniment": "Instrumental",
-        }
+    if progress_callback:
+        progress_callback("Iniciando separacion con Spleeter...")
+
+    separator = Separator(preset)
+    separator.separate_to_file(str(input_path), str(output_dir))
 
     if progress_callback:
-        progress_callback("Cargando modelo de separacion...")
-
-    separator = Separator()
-    separator.load_model(model_filename=model_name)
-
-    if progress_callback:
-        progress_callback("Separando audio...")
-
-    output_files = separator.separate(str(input_path))
-
-    if progress_callback:
-        progress_callback("Separacion completada, organizando archivos...")
+        progress_callback("Separacion completada, buscando archivos de resultado...")
 
     stem_files = {}
-    for output_file in output_files:
-        output_path = Path(output_file)
-        if not output_path.exists():
-            continue
-        filename = output_path.stem.lower()
-        for key, label in stems_map.items():
-            if label.lower() in filename:
-                dest = output_dir / f"{key}.wav"
-                import shutil
-                shutil.move(str(output_path), str(dest))
-                stem_files[key] = dest
-                break
+    track_name = input_path.stem
+
+    for stem in expected_stems:
+        wav_file = output_dir / track_name / f"{stem}.wav"
+        if wav_file.exists():
+            stem_files[stem] = wav_file
         else:
-            dest = output_dir / output_path.name
-            import shutil
-            shutil.move(str(output_path), str(dest))
-            stem_files[output_path.stem] = dest
+            wav_file2 = output_dir / f"{stem}.wav"
+            if wav_file2.exists():
+                stem_files[stem] = wav_file2
+            else:
+                for candidate in output_dir.rglob(f"{stem}.wav"):
+                    stem_files[stem] = candidate
+                    break
+
+    if not stem_files:
+        all_wavs = list(output_dir.rglob("*.wav"))
+        if all_wavs:
+            for wav in all_wavs:
+                stem_files[wav.stem] = wav
 
     return stem_files
