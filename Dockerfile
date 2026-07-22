@@ -26,7 +26,24 @@ RUN pip install --no-cache-dir "numpy<2"
 
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir "numpy<2"
-RUN pip install --no-cache-dir --no-deps spleeter==2.1.0 "librosa>=0.10.0" && pip install --no-cache-dir "numpy<2" audioread numba llvmlite
+RUN pip install --no-cache-dir --no-deps spleeter==2.1.0 && \
+    pip install --no-cache-dir \
+    "librosa>=0.10.0" \
+    audioread \
+    soundfile \
+    numpy \
+    scipy \
+    pooch \
+    resampy \
+    joblib \
+    decorator \
+    threadpoolctl \
+    lazy_loader \
+    soxr \
+    numba \
+    llvmlite \
+    norbert && \
+    pip install --no-cache-dir "numpy<2"
 
 COPY backend/ ./
 COPY --from=frontend-build /frontend/dist ./frontend/dist

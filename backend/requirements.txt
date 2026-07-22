@@ -7,7 +7,6 @@ tensorflow>=2.16.0
 soundfile>=0.14.0
 norbert>=0.2.1
 scipy>=1.11,<1.13
-audioread>=3.0.0
 lazy_loader
 joblib
 decorator
