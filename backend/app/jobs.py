@@ -72,7 +72,7 @@ class Job:
             "output_format": snap["output_format"].value,
             "progress_message": snap["progress_message"],
             "error_message": snap["error_message"],
-            "tracks": [t.model_dump() for t in snap["tracks"]],
+            "tracks": [t.dict() for t in snap["tracks"]],
             "created_at": snap["created_at"],
         }
 

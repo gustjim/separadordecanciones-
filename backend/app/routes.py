@@ -364,7 +364,7 @@ def get_job_tracks(job_id: str):
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Trabajo no encontrado.")
-    return {"tracks": [t.model_dump() for t in job.tracks]}
+    return {"tracks": [t.dict() for t in job.tracks]}
 
 
 @router.get("/jobs/{job_id}/tracks/{track_name}")
