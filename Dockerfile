@@ -22,14 +22,12 @@ COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 RUN mkdir -p /app/models && \
-    curl -fSL -o /app/models/UVR-MDX-NET-Inst_HQ_3.onnx \
-    "https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/UVR-MDX-NET-Inst_HQ_3.onnx" && \
-    echo "Model downloaded OK, size: $(du -h /app/models/UVR-MDX-NET-Inst_HQ_3.onnx | cut -f1)"
+    curl -fSL -o /app/models/UVR_MDXNET_KARA.onnx \
+    "https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/UVR_MDXNET_KARA.onnx" && \
+    echo "Model: $(du -h /app/models/UVR_MDXNET_KARA.onnx | cut -f1)"
 
 COPY backend/ ./
 COPY --from=frontend-build /frontend/dist ./frontend/dist
-
-RUN python -c "import onnxruntime; print('onnxruntime OK')"
 
 RUN echo '#!/bin/sh\nexec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}' > /app/start.sh && chmod +x /app/start.sh
 

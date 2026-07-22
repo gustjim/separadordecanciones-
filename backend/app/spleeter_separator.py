@@ -1,12 +1,12 @@
 from __future__ import annotations
 
+import gc
 import os
 import subprocess
 from pathlib import Path
 from typing import Callable
 
 import numpy as np
-import soundfile as sf
 
 from .models import SeparationMode
 
@@ -20,78 +20,11 @@ PRESET_MAP = {
     SeparationMode.TWO_STEMS: (SPLATTER_STEMS_2, "spleeter:2stems"),
 }
 
-MODEL_DIR = Path(os.environ.get("MODEL_DIR", "/app/models"))
-MDX_MODEL_URL = "https://github.com/TRvlvr/model_repo/releases/download/all_public_uvr_models/UVR-MDX-NET-Inst_HQ_3.onnx"
-TARGET_SR = 44100
+MODEL_DIR = Path("/app/models")
+SR = 44100
 N_FFT = 2048
 HOP = 512
-DIM_F = 2048
-DIM_T = 8
-CHUNK_SIZE = HOP * (2 ** DIM_T - 1)
-MARGIN = 44100
-
-
-def _get_model_path() -> Path:
-    model_path = MODEL_DIR / "UVR-MDX-NET-Inst_HQ_3.onnx"
-    if model_path.exists() and model_path.stat().st_size > 1_000_000:
-        return model_path
-    MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    subprocess.run([
-        "curl", "-fSL", "-o", str(model_path), MDX_MODEL_URL,
-    ], timeout=300, check=True)
-    return model_path
-
-
-def _stft(x, n_fft=N_FFT, hop_length=HOP):
-    window = np.hanning(n_fft).astype(np.float32)
-    num_frames = 1 + (len(x) - n_fft) // hop_length
-    frames = np.stack([x[i * hop_length : i * hop_length + n_fft] * window for i in range(num_frames)])
-    spec = np.fft.rfft(frames, n=n_fft)
-    return spec.T
-
-
-def _istft(spec, hop_length=HOP, length=None):
-    spec = spec.T
-    n_fft = (spec.shape[1] - 1) * 2
-    window = np.hanning(n_fft).astype(np.float32)
-    num_frames = spec.shape[0]
-    output_len = n_fft + hop_length * (num_frames - 1)
-    output = np.zeros(output_len, dtype=np.float32)
-    norm = np.zeros(output_len, dtype=np.float32)
-    for i in range(num_frames):
-        frame = np.fft.irfft(spec[i], n=n_fft)
-        start = i * hop_length
-        output[start : start + n_fft] += frame * window
-        norm[start : start + n_fft] += window ** 2
-    norm[norm < 1e-8] = 1.0
-    output /= norm
-    if length is not None:
-        output = output[:length]
-    return output
-
-
-def _to_model_input(spec_l, spec_r):
-    c0 = spec_l
-    c1 = spec_r
-    c2 = np.abs(c0)
-    c3 = np.angle(c0)
-    x = np.stack([c0.real, c0.imag, c1.real, c1.imag], axis=0)
-    x = np.reshape(x, [4, DIM_F, -1])
-    paded = DIM_T - x.shape[2] % DIM_T if x.shape[2] % DIM_T != 0 else 0
-    if paded > 0:
-        x = np.pad(x, ((0, 0), (0, 0), (0, paded)))
-    x = np.reshape(x, [1, 4, DIM_F, -1, DIM_T])
-    x = np.transpose(x, [0, 1, 4, 2, 3])
-    return x.astype(np.float32)
-
-
-def _from_model_input(x):
-    n_bins = N_FFT // 2 + 1
-    x = np.transpose(x[0], [0, 2, 3, 1])
-    x = np.reshape(x, [-1, n_bins])
-    c0 = x[:, 0] + x[:, 1] * 1j
-    c1 = x[:, 2] + x[:, 3] * 1j
-    return c0, c1
+CHUNK_SECONDS = 15
 
 
 def separate_audio_spleeter(
@@ -100,24 +33,67 @@ def separate_audio_spleeter(
     mode: SeparationMode,
     progress_callback: Callable[[str], None] | None = None,
 ) -> dict[str, Path]:
-    expected_stems, preset = PRESET_MAP[mode]
+    expected_stems, _ = PRESET_MAP[mode]
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if mode == SeparationMode.TWO_STEMS:
         try:
-            return _separate_with_onnx(input_path, output_dir, progress_callback)
+            return _separate_onnx(input_path, output_dir, progress_callback)
         except Exception as e:
             import traceback
             traceback.print_exc()
-            print(f"[WARNING] ONNX separation failed: {e}", flush=True)
+            print(f"[WARNING] ONNX failed: {e}", flush=True)
 
-    return _separate_with_ffmpeg(input_path, output_dir, expected_stems, progress_callback)
+    return _separate_ffmpeg(input_path, output_dir, expected_stems, progress_callback)
 
 
-def _separate_with_onnx(input_path: Path, output_dir: Path, progress_callback):
+def _load_audio(input_path: Path) -> tuple[np.ndarray, int]:
+    import soundfile as sf
+    audio, sr = sf.read(str(input_path), dtype="float32")
+    if audio.ndim == 1:
+        audio = np.stack([audio, audio], axis=-1)
+    if sr != SR:
+        import scipy.signal
+        num_samples = int(len(audio) * SR / sr)
+        audio = np.stack([
+            scipy.signal.resample(audio[:, 0], num_samples),
+            scipy.signal.resample(audio[:, 1], num_samples),
+        ], axis=-1)
+        sr = SR
+    return audio, sr
+
+
+def _stft(x):
+    window = np.hanning(N_FFT).astype(np.float32)
+    n_frames = 1 + (len(x) - N_FFT) // HOP
+    frames = np.stack([x[i * HOP : i * HOP + N_FFT] * window for i in range(n_frames)])
+    return np.fft.rfft(frames, n=N_FFT).T
+
+
+def _istft(spec, length=None):
+    spec = spec.T
+    n_fft2 = (spec.shape[1] - 1) * 2
+    window = np.hanning(n_fft2).astype(np.float32)
+    total = n_fft2 + HOP * (spec.shape[0] - 1)
+    out = np.zeros(total, dtype=np.float32)
+    norm = np.zeros(total, dtype=np.float32)
+    for i in range(spec.shape[0]):
+        frame = np.fft.irfft(spec[i], n=n_fft2)
+        s = i * HOP
+        out[s : s + n_fft2] += frame * window
+        norm[s : s + n_fft2] += window * window
+    norm[norm < 1e-8] = 1.0
+    out /= norm
+    return out[:length] if length else out
+
+
+def _separate_onnx(input_path: Path, output_dir: Path, progress_callback):
     import onnxruntime as ort
+    import soundfile as sf
 
-    model_path = _get_model_path()
+    model_path = MODEL_DIR / "UVR_MDXNET_KARA.onnx"
+    if not model_path.exists():
+        raise FileNotFoundError(f"Model not found: {model_path}")
 
     if progress_callback:
         progress_callback("Cargando modelo MDX-Net...")
@@ -127,82 +103,80 @@ def _separate_with_onnx(input_path: Path, output_dir: Path, progress_callback):
     if progress_callback:
         progress_callback("Leyendo audio...")
 
-    audio, sr = sf.read(str(input_path))
-    if audio.ndim == 1:
-        audio = np.stack([audio, audio], axis=-1)
-
-    if sr != TARGET_SR:
-        import librosa
-        audio = librosa.resample(audio.T, orig_sr=sr, target_sr=TARGET_SR).T
-        sr = TARGET_SR
-
+    audio, sr = _load_audio(input_path)
     length = audio.shape[0]
-    audio = audio.T.astype(np.float32)
+    audio_T = audio.T.astype(np.float32)
 
-    if progress_callback:
-        progress_callback("Separando con modelo MDX-Net...")
+    chunk_samples = CHUNK_SECONDS * SR
+    vocal_l = np.zeros(length, dtype=np.float32)
+    vocal_r = np.zeros(length, dtype=np.float32)
 
-    spec_l = _stft(audio[0])
-    spec_r = _stft(audio[1])
+    total_chunks = max(1, (length + chunk_samples - 1) // chunk_samples)
 
-    model_input = _to_model_input(spec_l, spec_r)
+    for ci, start in enumerate(range(0, length, chunk_samples)):
+        end = min(start + chunk_samples, length)
+        seg_l = audio_T[0, start:end]
+        seg_r = audio_T[1, start:end]
 
-    mask = sess.run(None, {"input": model_input})[0]
+        spec_l = _stft(seg_l)
+        spec_r = _stft(seg_r)
+        spec = np.stack([spec_l.real, spec_l.imag, spec_r.real, spec_r.imag], axis=0)
 
-    out_c0, out_c1 = _from_model_input(mask)
+        dim_f, dim_t = spec.shape[1], spec.shape[2]
+        pad = (8 - dim_t % 8) % 8
+        if pad > 0:
+            spec = np.pad(spec, ((0, 0), (0, 0), (0, pad)))
+        spec = spec.reshape(1, 4, spec.shape[1], -1, 8).transpose(0, 1, 4, 2, 3).astype(np.float32)
 
-    vocal_spec_l = spec_l[:out_c0.shape[0], :out_c0.shape[1]] * out_c0
-    vocal_spec_r = spec_r[:out_c1.shape[0], :out_c1.shape[1]] * out_c1
+        if progress_callback:
+            progress_callback(f"Separando chunk {ci + 1}/{total_chunks}...")
 
-    vocal_l = _istft(vocal_spec_l, length=length)
-    vocal_r = _istft(vocal_spec_r, length=length)
+        pred = sess.run(None, {"input": spec})[0]
+
+        pred = pred.transpose(0, 1, 3, 4, 2).reshape(4, dim_f, -1)[:, :, :dim_t]
+        vocal_spec_l = pred[0] + 1j * pred[1]
+        vocal_spec_r = pred[2] + 1j * pred[3]
+
+        vocal_l[start:end] = _istft(vocal_spec_l, length=end - start)
+        vocal_r[start:end] = _istft(vocal_spec_r, length=end - start)
+
+        del spec, pred
+        gc.collect()
 
     vocals = np.stack([vocal_l, vocal_r], axis=-1)
-    instrumental = audio.T - vocals.T
+    inst = audio - vocals
 
     vocals = np.clip(vocals, -1, 1)
-    instrumental = np.clip(instrumental, -1, 1)
+    inst = np.clip(inst, -1, 1)
 
     if progress_callback:
         progress_callback("Guardando archivos...")
 
-    vocals_path = output_dir / "vocals.wav"
-    instrumental_path = output_dir / "accompaniment.wav"
+    v_path = output_dir / "vocals.wav"
+    i_path = output_dir / "accompaniment.wav"
+    sf.write(str(v_path), vocals, SR)
+    sf.write(str(i_path), inst, SR)
 
-    sf.write(str(vocals_path), vocals, sr)
-    sf.write(str(instrumental_path), instrumental, sr)
-
-    return {"vocals": vocals_path, "accompaniment": instrumental_path}
+    return {"vocals": v_path, "accompaniment": i_path}
 
 
-def _separate_with_ffmpeg(input_path, output_dir, expected_stems, progress_callback):
+def _separate_ffmpeg(input_path, output_dir, expected_stems, progress_callback):
     stem_files = {}
+    vocals = output_dir / "vocals.wav"
+    instrumental = output_dir / "accompaniment.wav"
 
-    if "vocals" in expected_stems and "accompaniment" in expected_stems:
-        vocals = output_dir / "vocals.wav"
-        instrumental = output_dir / "accompaniment.wav"
+    subprocess.run([
+        "ffmpeg", "-y", "-i", str(input_path),
+        "-af", "pan=stereo|c0=c0-c1|c1=c1-c0", "-ar", "44100", str(vocals),
+    ], capture_output=True, timeout=600)
 
-        subprocess.run([
-            "ffmpeg", "-y", "-i", str(input_path),
-            "-af", "pan=stereo|c0=c0-c1|c1=c1-c0",
-            "-ar", "44100", str(vocals),
-        ], capture_output=True, timeout=600)
+    subprocess.run([
+        "ffmpeg", "-y", "-i", str(input_path),
+        "-af", "pan=stereo|c0=c0+c1|c1=c0+c1", "-ar", "44100", str(instrumental),
+    ], capture_output=True, timeout=600)
 
-        subprocess.run([
-            "ffmpeg", "-y", "-i", str(input_path),
-            "-af", "pan=stereo|c0=c0+c1|c1=c0+c1",
-            "-ar", "44100", str(instrumental),
-        ], capture_output=True, timeout=600)
-
-        if vocals.exists():
-            stem_files["vocals"] = vocals
-        if instrumental.exists():
-            stem_files["accompaniment"] = instrumental
-    else:
-        import shutil
-        for stem in expected_stems:
-            out = output_dir / f"{stem}.wav"
-            shutil.copy2(str(input_path), str(out))
-            stem_files[stem] = out
-
+    if vocals.exists():
+        stem_files["vocals"] = vocals
+    if instrumental.exists():
+        stem_files["accompaniment"] = instrumental
     return stem_files
