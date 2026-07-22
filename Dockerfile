@@ -19,7 +19,8 @@ ENV TF_USE_LEGACY_KERAS=1
 WORKDIR /app
 
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir --no-deps spleeter==2.4.2
 
 COPY backend/ ./
 COPY --from=frontend-build /frontend/dist ./frontend/dist
