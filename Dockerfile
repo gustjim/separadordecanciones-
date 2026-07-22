@@ -28,21 +28,11 @@ COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir "numpy<2"
 RUN pip install --no-cache-dir --no-deps spleeter==2.1.0 && \
     pip install --no-cache-dir \
-    "librosa>=0.10.0" \
-    audioread \
-    soundfile \
-    numpy \
-    scipy \
-    pooch \
-    resampy \
-    joblib \
-    decorator \
-    threadpoolctl \
-    lazy_loader \
-    soxr \
-    numba \
-    llvmlite \
-    norbert && \
+    "librosa>=0.10.0" norbert soundfile httpx \
+    audioread soxr numba llvmlite \
+    pandas \
+    pooch resampy joblib decorator threadpoolctl lazy_loader \
+    msgpack && \
     pip install --no-cache-dir "numpy<2"
 
 COPY backend/ ./
