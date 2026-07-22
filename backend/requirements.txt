@@ -3,4 +3,4 @@ uvicorn[standard]==0.34.2
 python-multipart==0.0.20
 pydantic==2.11.3
 yt-dlp>=2024.1.0
-"audio-separator[cpu]>=0.30.0"
+audio-separator[cpu]>=0.30.0
