@@ -38,12 +38,11 @@ def check_demucs() -> bool:
 
 
 def check_spleeter() -> bool:
-    if shutil.which("spleeter"):
+    try:
+        import spleeter
         return True
-    venv_bin = _venv_bin_dir()
-    if venv_bin and (venv_bin / "spleeter").exists():
-        return True
-    return False
+    except ImportError:
+        return False
 
 
 def get_audio_duration(file_path: Path) -> float:
