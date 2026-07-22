@@ -502,26 +502,34 @@ body {
 
 .progress-bar-mixer {
   flex: 1;
-  height: 8px;
-  background: var(--border);
-  border-radius: 4px;
+  height: 28px;
   cursor: pointer;
   position: relative;
-  padding: 10px 0;
-  margin: -10px 0;
-  background-clip: content-box;
-  border-top: 10px solid transparent;
-  border-bottom: 10px solid transparent;
+}
+
+.progress-bar-mixer::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 8px;
+  transform: translateY(-50%);
+  background: var(--border);
+  border-radius: 4px;
 }
 
 .progress-fill {
-  height: 100%;
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 8px;
   width: 0%;
+  transform: translateY(-50%);
   background: var(--accent);
   border-radius: 4px;
+  pointer-events: none;
   transition: width 0.1s linear;
-  position: relative;
-  z-index: 1;
 }
 
 .tracks-container {
