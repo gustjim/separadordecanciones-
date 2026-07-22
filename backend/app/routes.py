@@ -7,8 +7,8 @@ import zipfile
 import shutil
 import threading
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Body
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Body, Request, Header
+from fastapi.responses import FileResponse, StreamingResponse
 
 from .config import settings
 from .models import (
@@ -368,7 +368,12 @@ def get_job_tracks(job_id: str):
 
 
 @router.get("/jobs/{job_id}/tracks/{track_name}")
-def download_track(job_id: str, track_name: str):
+def download_track(
+    job_id: str,
+    track_name: str,
+    request: Request,
+    range: str = Header(default=None),
+):
     job = get_job(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Trabajo no encontrado.")
@@ -385,10 +390,50 @@ def download_track(job_id: str, track_name: str):
             ext = file_path.suffix
             media_type = "audio/wav" if ext == ".wav" else "audio/mpeg" if ext == ".mp3" else "application/octet-stream"
 
+            file_size = file_path.stat().st_size
+
+            headers = {
+                "Accept-Ranges": "bytes",
+                "Content-Length": str(file_size),
+                "Content-Type": media_type,
+                "Content-Disposition": f'inline; filename="{track.filename}"',
+            }
+
+            if range is not None:
+                range_header = range.replace("bytes=", "")
+                parts = range_header.split("-")
+                start = int(parts[0]) if parts[0] else 0
+                end = int(parts[1]) if parts[1] else file_size - 1
+                end = min(end, file_size - 1)
+                content_length = end - start + 1
+
+                def iter_file():
+                    with open(file_path, "rb") as f:
+                        f.seek(start)
+                        remaining = content_length
+                        while remaining > 0:
+                            chunk_size = min(1024 * 64, remaining)
+                            data = f.read(chunk_size)
+                            if not data:
+                                break
+                            remaining -= len(data)
+                            yield data
+
+                return StreamingResponse(
+                    iter_file(),
+                    status_code=206,
+                    headers={
+                        **headers,
+                        "Content-Range": f"bytes {start}-{end}/{file_size}",
+                        "Content-Length": str(content_length),
+                    },
+                    media_type=media_type,
+                )
+
             return FileResponse(
                 path=str(file_path),
-                filename=track.filename,
                 media_type=media_type,
+                headers=headers,
             )
 
     raise HTTPException(status_code=404, detail=f"Pista '{track_name}' no encontrada.")
