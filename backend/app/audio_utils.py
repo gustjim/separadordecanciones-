@@ -39,7 +39,7 @@ def check_demucs() -> bool:
 
 def check_spleeter() -> bool:
     try:
-        import audio_separator
+        from spleeter.separator import Separator
         return True
     except ImportError:
         return False
