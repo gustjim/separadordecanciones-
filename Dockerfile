@@ -14,7 +14,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 ENV DEMUCS_ENABLED="false"
-ENV TF_USE_LEGACY_KERAS=1
 
 WORKDIR /app
 
@@ -23,8 +22,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ ./
 COPY --from=frontend-build /frontend/dist ./frontend/dist
-
-RUN python -c "from spleeter.separator import Separator; s = Separator('spleeter:2stems'); print('spleeter OK')"
 
 RUN echo '#!/bin/sh\nexec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}' > /app/start.sh && chmod +x /app/start.sh
 
