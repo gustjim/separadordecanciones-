@@ -79,7 +79,6 @@ async function checkServerHealth() {
     const health = await checkHealth();
     const missing = [];
     if (!health.ffmpeg_available) missing.push('FFmpeg');
-    if (!health.demucs_available) missing.push('Demucs');
 
     if (missing.length > 0) {
       dom.healthBanner.style.display = 'block';
@@ -88,9 +87,10 @@ async function checkServerHealth() {
     } else {
       dom.healthBanner.style.display = 'block';
       dom.healthBanner.className = 'health-banner';
+      const engine = health.demucs_available ? 'Demucs' : 'Spleeter';
       const urlStatus = health.ytdlp_available ? '' : ' (URLs no disponibles - falta yt-dlp)';
       const spleeterStatus = health.spleeter_available ? '' : ' (5 pistas no disponible - falta spleeter)';
-      dom.healthText.textContent = `Servidor activo. Python ${health.python_version}. Espacio disponible: ${health.disk_space_mb.toFixed(0)} MB${urlStatus}${spleeterStatus}`;
+      dom.healthText.textContent = `Servidor activo. Motor: ${engine}. Python ${health.python_version}. Espacio: ${health.disk_space_mb.toFixed(0)} MB${urlStatus}${spleeterStatus}`;
       if (health.url_download_enabled === false) {
         const urlSection = document.querySelector('.url-divider');
         const urlInputGroup = document.querySelector('.url-input-group');
