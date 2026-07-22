@@ -19,6 +19,7 @@ WORKDIR /app
 
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir --no-deps tensorflow-cpu==2.12.1 && \
     pip install --no-cache-dir --no-deps spleeter==2.4.2
 
 COPY backend/ ./
