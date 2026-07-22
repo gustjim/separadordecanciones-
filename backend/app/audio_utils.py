@@ -38,7 +38,11 @@ def check_demucs() -> bool:
 
 
 def check_spleeter() -> bool:
-    return True
+    try:
+        import audio_separator
+        return True
+    except ImportError:
+        return False
 
 
 def get_audio_duration(file_path: Path) -> float:
